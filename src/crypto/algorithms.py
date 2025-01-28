@@ -31,7 +31,7 @@ class EncryptionAlgorithm:
             key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
             return key
         except Exception as e:
-            raise Exception(f"Ошибка генерации ключа: {str(e)}")
+            raise Exception(f"Key generation error: {str(e)}")
 
 
 class AESAlgorithm(EncryptionAlgorithm):
@@ -45,14 +45,11 @@ class AESAlgorithm(EncryptionAlgorithm):
             cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
             encryptor = cipher.encryptor()
 
-            # Добавляем padding
             padder = padding.PKCS7(self.block_size).padder()
             padded_data = padder.update(data) + padder.finalize()
 
-            # Шифруем
             encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
 
-            # Добавляем метаданные
             metadata = {
                 'algorithm': 'AES',
                 'mode': 'CBC',
@@ -60,17 +57,14 @@ class AESAlgorithm(EncryptionAlgorithm):
                 'key_size': self.key_size
             }
 
-            # Преобразуем метаданные в байты
             metadata_bytes = str(metadata).encode()
 
-            # Возвращаем соль + IV + метаданные + зашифрованные данные
             return self.salt + iv + len(metadata_bytes).to_bytes(4, 'big') + metadata_bytes + encrypted_data
         except Exception as e:
-            raise Exception(f"Ошибка шифрования: {str(e)}")
+            raise Exception(f"Encryption error: {str(e)}")
 
     def decrypt(self, data, key):
         try:
-            # Извлекаем компоненты
             salt = data[:16]
             iv = data[16:32]
             metadata_len = int.from_bytes(data[32:36], 'big')
@@ -80,14 +74,12 @@ class AESAlgorithm(EncryptionAlgorithm):
             cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
             decryptor = cipher.decryptor()
 
-            # Расшифровываем
             padded_data = decryptor.update(encrypted_data) + decryptor.finalize()
 
-            # Удаляем padding
             unpadder = padding.PKCS7(self.block_size).unpadder()
             return unpadder.update(padded_data) + unpadder.finalize()
         except Exception as e:
-            raise Exception(f"Ошибка расшифрования: {str(e)}")
+            raise Exception(f"Decryption error: {str(e)}")
 
 
 class RSAAlgorithm(EncryptionAlgorithm):
@@ -111,7 +103,7 @@ class RSAAlgorithm(EncryptionAlgorithm):
             )
             return encrypted_data
         except Exception as e:
-            raise Exception(f"Ошибка RSA шифрования: {str(e)}")
+            raise Exception(f"RSA encryption error: {str(e)}")
 
     def decrypt(self, data, key=None):
         try:
@@ -125,7 +117,7 @@ class RSAAlgorithm(EncryptionAlgorithm):
             )
             return decrypted_data
         except Exception as e:
-            raise Exception(f"Ошибка RSA расшифрования: {str(e)}")
+            raise Exception(f"RSA decryption error: {str(e)}")
 
 
 class FernetAlgorithm(EncryptionAlgorithm):
@@ -134,7 +126,7 @@ class FernetAlgorithm(EncryptionAlgorithm):
             f = Fernet(key)
             return self.salt + f.encrypt(data)
         except Exception as e:
-            raise Exception(f"Ошибка Fernet шифрования: {str(e)}")
+            raise Exception(f"Fernet encryption error: {str(e)}")
 
     def decrypt(self, data, key):
         try:
@@ -143,7 +135,7 @@ class FernetAlgorithm(EncryptionAlgorithm):
             f = Fernet(key)
             return f.decrypt(encrypted_data)
         except Exception as e:
-            raise Exception(f"Ошибка Fernet расшифрования: {str(e)}")
+            raise Exception(f"Fernet decryption error: {str(e)}")
 
 
 def get_algorithm(algorithm_name, key_size=256):
@@ -153,5 +145,5 @@ def get_algorithm(algorithm_name, key_size=256):
         'FERNET': FernetAlgorithm
     }
     if algorithm_name.upper() not in algorithms:
-        raise ValueError(f"Неподдерживаемый алгоритм: {algorithm_name}")
+        raise ValueError(f"Unsupported algorithm: {algorithm_name}")
     return algorithms[algorithm_name.upper()](key_size)

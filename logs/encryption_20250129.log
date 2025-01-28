@@ -1,0 +1,6 @@
+2025-01-29 01:54:15 [INFO] === Starting a new logging session ===
+2025-01-29 01:54:15 [INFO] Log directory: logs
+2025-01-29 01:54:15 [INFO] Current user: scroll
+2025-01-29 01:54:15 [INFO] {"timestamp": "2025-01-29 01:54:15", "operation": "application_start", "file": null, "status": "starting", "user": "scroll"}
+2025-01-29 01:54:15 [INFO] {"timestamp": "2025-01-29 01:54:15", "operation": "gui_start", "file": null, "status": "initialized", "user": "scroll"}
+2025-01-29 01:54:23 [INFO] {"timestamp": "2025-01-29 01:54:23", "operation": "application_shutdown", "file": null, "status": "success", "user": "scroll"}

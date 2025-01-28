@@ -27,15 +27,12 @@ class EncryptionLogger:
             if not os.path.exists(self.log_dir):
                 os.makedirs(self.log_dir)
 
-            # Создаем имя файла с текущей датой
             current_date = datetime.now().strftime("%Y%m%d")
             log_file = os.path.join(self.log_dir, f'encryption_{current_date}.log')
 
-            # Настраиваем формат логирования
             log_format = '%(asctime)s [%(levelname)s] %(message)s'
             date_format = '%Y-%m-%d %H:%M:%S'
 
-            # Настраиваем базовую конфигурацию
             logging.basicConfig(
                 level=logging.INFO,
                 format=log_format,
@@ -49,12 +46,12 @@ class EncryptionLogger:
             self.logger = logging.getLogger(__name__)
 
             # Добавляем дополнительную информацию при старте
-            self.logger.info("=== Начало новой сессии логирования ===")
-            self.logger.info(f"Директория логов: {self.log_dir}")
-            self.logger.info(f"Текущий пользователь: {os.getenv('USERNAME', 'Unknown')}")
+            self.logger.info("=== Starting a new logging session ===")
+            self.logger.info(f"Log directory: {self.log_dir}")
+            self.logger.info(f"Current user: {os.getenv('USERNAME', 'Unknown')}")
 
         except Exception as e:
-            print(f"Ошибка настройки логирования: {str(e)}")
+            print(f"Logging setup error: {str(e)}")
             raise
 
     def log_operation(self, operation_type, file_path, status, error=None):
@@ -74,7 +71,7 @@ class EncryptionLogger:
                 self.logger.info(json.dumps(log_data, ensure_ascii=False))
 
         except Exception as e:
-            self.logger.error(f"Ошибка логирования: {str(e)}")
+            self.logger.error(f"Logging error: {str(e)}")
 
     def log_attempt(self, file_path, details=None):
         try:
@@ -91,7 +88,7 @@ class EncryptionLogger:
             self.logger.warning(json.dumps(log_data, ensure_ascii=False))
 
         except Exception as e:
-            self.logger.error(f"Ошибка логирования попытки: {str(e)}")
+            self.logger.error(f"Error logging attempt: {str(e)}")
 
     def log_error(self, error_message, additional_info=None):
         try:
@@ -107,7 +104,7 @@ class EncryptionLogger:
             self.logger.error(json.dumps(log_data, ensure_ascii=False))
 
         except Exception as e:
-            self.logger.error(f"Ошибка логирования ошибки: {str(e)}")
+            self.logger.error(f"Error logging error: {str(e)}")
 
     def get_logs(self, start_date=None, end_date=None, level=None):
         try:
@@ -127,7 +124,7 @@ class EncryptionLogger:
             return logs
 
         except Exception as e:
-            self.logger.error(f"Ошибка получения логов: {str(e)}")
+            self.logger.error(f"Error receiving logs: {str(e)}")
             return []
 
     def _filter_log_entry(self, entry, start_date, end_date, level):
@@ -151,6 +148,6 @@ class EncryptionLogger:
                     file_date = datetime.strptime(filename.split('_')[1].split('.')[0], "%Y%m%d")
                     if (current_date - file_date).days > days:
                         os.remove(file_path)
-                        self.logger.info(f"Удален старый лог-файл: {filename}")
+                        self.logger.info(f"Old log file removed: {filename}")
         except Exception as e:
-            self.logger.error(f"Ошибка при очистке старых логов: {str(e)}")
+            self.logger.error(f"Error clearing old logs: {str(e)}")

@@ -1,261 +1,440 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from src.crypto.encryptor import FileEncryptor
-from src.utils.validators import InputValidator
-import threading
 import os
+from datetime import datetime
+import json
+from src.crypto.encryptor import FileEncryptor
+from src.utils.logger import EncryptionLogger
 
 
 class EncryptionGUI:
-    def __init__(self):
-        self.window = tk.Tk()
-        self.window.title("Шифрование файлов")
-        self.window.geometry("600x500")
-
-        # Устанавливаем стиль
-        style = ttk.Style()
-        style.configure('TNotebook.Tab', padding=[20, 5])
+    def __init__(self, window):
+        self.encrypt_btn = None
+        self.window = window
+        self.window.title("File Encryptor")
+        self.window.geometry("600x800")
+        self.window.resizable(False, False)
 
         self.encryptor = FileEncryptor()
+        self.logger = EncryptionLogger()
+
         self.encrypt_file = None
         self.decrypt_file = None
 
-        self.create_widgets()
-
-    def create_widgets(self):
-        # Создаем notebook (вкладки)
-        self.notebook = ttk.Notebook(self.window)
-        self.notebook.pack(expand=True, fill='both', padx=10, pady=5)
-
-        # Создаем вкладку шифрования
-        self.encrypt_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.encrypt_frame, text='Шифрование')
-
-        # Создаем вкладку расшифрования
-        self.decrypt_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.decrypt_frame, text='Расшифрование')
-
-        # Наполняем вкладку шифрования
-        self.setup_encrypt_tab()
-
-        # Наполняем вкладку расшифрования
-        self.setup_decrypt_tab()
-
-    def setup_encrypt_tab(self):
-        # Рамка для выбора файла
-        file_frame = ttk.LabelFrame(self.encrypt_frame, text="Выбор файла", padding=10)
-        file_frame.pack(fill='x', padx=10, pady=5)
-
-        self.encrypt_file_btn = ttk.Button(
-            file_frame,
-            text="Выбрать файл для шифрования",
-            command=self.select_encrypt_file
+        self.setup_gui()
+        self.logger.log_operation(
+            operation_type="gui_start",
+            file_path=None,
+            status="initialized"
         )
-        self.encrypt_file_btn.pack(pady=5)
 
-        self.encrypt_file_label = ttk.Label(file_frame, text="Файл не выбран")
-        self.encrypt_file_label.pack(pady=5)
+    def setup_gui(self):
+        notebook = ttk.Notebook(self.window)
+        notebook.pack(pady=10, expand=True)
 
-        # Рамка для пароля
-        password_frame = ttk.LabelFrame(self.encrypt_frame, text="Защита", padding=10)
-        password_frame.pack(fill='x', padx=10, pady=5)
+        encrypt_frame = ttk.Frame(notebook)
+        notebook.add(encrypt_frame, text="Encryption")
 
-        ttk.Label(password_frame, text="Введите пароль:").pack()
-        self.encrypt_password_entry = ttk.Entry(password_frame, show="*")
-        self.encrypt_password_entry.pack(pady=5)
+        decrypt_frame = ttk.Frame(notebook)
+        notebook.add(decrypt_frame, text="Decoding")
 
-        ttk.Label(password_frame, text="Повторите пароль:").pack()
-        self.encrypt_confirm_password_entry = ttk.Entry(password_frame, show="*")
-        self.encrypt_confirm_password_entry.pack(pady=5)
+        self.setup_encrypt_tab(encrypt_frame)
+        self.setup_decrypt_tab(decrypt_frame)
 
-        # Кнопка шифрования
+        self.setup_menu()
+
+    def setup_encrypt_tab(self, parent):
+        file_frame = ttk.LabelFrame(parent, text="File selection", padding=10)
+        file_frame.pack(fill="x", padx=10, pady=5)
+
+        ttk.Button(
+            file_frame,
+            text="Select file",
+            command=self.select_encrypt_file
+        ).pack(side="left", padx=5)
+
+        self.encrypt_file_label = ttk.Label(file_frame, text="File not selected")
+        self.encrypt_file_label.pack(side="left", padx=5)
+
+        metadata_frame = ttk.LabelFrame(parent, text="Metadata", padding=10)
+        metadata_frame.pack(fill="x", padx=10, pady=5)
+
+        self.metadata_text = tk.Text(metadata_frame, height=4, width=50)
+        self.metadata_text.pack()
+
+        algo_frame = ttk.LabelFrame(parent, text="Encryption algorithm", padding=10)
+        algo_frame.pack(fill="x", padx=10, pady=5)
+
+        self.algorithm_var = tk.StringVar(value="Fernet")
+        for algo in ["Fernet", "AES", "RSA"]:
+            ttk.Radiobutton(
+                algo_frame,
+                text=algo,
+                variable=self.algorithm_var,
+                value=algo
+            ).pack(side="left", padx=10)
+
+        pass_frame = ttk.LabelFrame(parent, text="Password", padding=10)
+        pass_frame.pack(fill="x", padx=10, pady=5)
+
+        ttk.Label(pass_frame, text="Password:").pack()
+        self.encrypt_password_entry = ttk.Entry(pass_frame, show="*")
+        self.encrypt_password_entry.pack(fill="x", pady=5)
+
+        ttk.Label(pass_frame, text="Confirm your password:").pack()
+        self.encrypt_confirm_password_entry = ttk.Entry(pass_frame, show="*")
+        self.encrypt_confirm_password_entry.pack(fill="x", pady=5)
+
+        progress_frame = ttk.Frame(parent)
+        progress_frame.pack(fill="x", padx=10, pady=5)
+
+        self.encrypt_progress_var = tk.DoubleVar()
+        ttk.Progressbar(
+            progress_frame,
+            variable=self.encrypt_progress_var,
+            maximum=100
+        ).pack(fill="x", pady=5)
+
+        self.encrypt_status = ttk.Label(progress_frame, text="")
+        self.encrypt_status.pack()
+
         self.encrypt_btn = ttk.Button(
-            self.encrypt_frame,
-            text="Зашифровать файл",
+            progress_frame,
+            text="Encrypt",
             command=self.start_encryption
         )
         self.encrypt_btn.pack(pady=10)
 
-        # Прогресс и статус
-        self.encrypt_progress_var = tk.DoubleVar()
-        self.encrypt_progress = ttk.Progressbar(
-            self.encrypt_frame,
-            variable=self.encrypt_progress_var,
-            maximum=100
-        )
-        self.encrypt_progress.pack(fill='x', padx=10, pady=5)
+    def setup_decrypt_tab(self, parent):
+        file_frame = ttk.LabelFrame(parent, text="File selection", padding=10)
+        file_frame.pack(fill="x", padx=10, pady=5)
 
-        self.encrypt_status = ttk.Label(self.encrypt_frame, text="")
-        self.encrypt_status.pack(pady=5)
-
-    def setup_decrypt_tab(self):
-        # Рамка для выбора файла
-        file_frame = ttk.LabelFrame(self.decrypt_frame, text="Выбор файла", padding=10)
-        file_frame.pack(fill='x', padx=10, pady=5)
-
-        self.decrypt_file_btn = ttk.Button(
+        ttk.Button(
             file_frame,
-            text="Выбрать зашифрованный файл",
+            text="Select file",
             command=self.select_decrypt_file
-        )
-        self.decrypt_file_btn.pack(pady=5)
+        ).pack(side="left", padx=5)
 
-        self.decrypt_file_label = ttk.Label(file_frame, text="Файл не выбран")
-        self.decrypt_file_label.pack(pady=5)
+        self.decrypt_file_label = ttk.Label(file_frame, text="File not selected")
+        self.decrypt_file_label.pack(side="left", padx=5)
 
-        # Рамка для пароля
-        password_frame = ttk.LabelFrame(self.decrypt_frame, text="Пароль", padding=10)
-        password_frame.pack(fill='x', padx=10, pady=5)
+        metadata_frame = ttk.LabelFrame(parent, text="Metadata", padding=10)
+        metadata_frame.pack(fill="x", padx=10, pady=5)
 
-        ttk.Label(password_frame, text="Введите пароль:").pack()
-        self.decrypt_password_entry = ttk.Entry(password_frame, show="*")
-        self.decrypt_password_entry.pack(pady=5)
+        self.decrypt_metadata_text = tk.Text(metadata_frame, height=4, width=50)
+        self.decrypt_metadata_text.pack()
 
-        # Кнопка расшифрования
+        pass_frame = ttk.LabelFrame(parent, text="Password", padding=10)
+        pass_frame.pack(fill="x", padx=10, pady=5)
+
+        ttk.Label(pass_frame, text="Password:").pack()
+        self.decrypt_password_entry = ttk.Entry(pass_frame, show="*")
+        self.decrypt_password_entry.pack(fill="x", pady=5)
+
+        progress_frame = ttk.Frame(parent)
+        progress_frame.pack(fill="x", padx=10, pady=5)
+
+        self.decrypt_progress_var = tk.DoubleVar()
+        ttk.Progressbar(
+            progress_frame,
+            variable=self.decrypt_progress_var,
+            maximum=100
+        ).pack(fill="x", pady=5)
+
+        self.decrypt_status = ttk.Label(progress_frame, text="")
+        self.decrypt_status.pack()
+
         self.decrypt_btn = ttk.Button(
-            self.decrypt_frame,
-            text="Расшифровать файл",
+            progress_frame,
+            text="Decipher",
             command=self.start_decryption
         )
         self.decrypt_btn.pack(pady=10)
 
-        # Прогресс и статус
-        self.decrypt_progress_var = tk.DoubleVar()
-        self.decrypt_progress = ttk.Progressbar(
-            self.decrypt_frame,
-            variable=self.decrypt_progress_var,
-            maximum=100
-        )
-        self.decrypt_progress.pack(fill='x', padx=10, pady=5)
+    def setup_menu(self):
+        menubar = tk.Menu(self.window)
+        self.window.config(menu=menubar)
 
-        self.decrypt_status = ttk.Label(self.decrypt_frame, text="")
-        self.decrypt_status.pack(pady=5)
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Exit", command=self.quit_application)
+
+        view_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="View", menu=view_menu)
+        view_menu.add_command(label="Viewing logs", command=self.view_logs)
+        view_menu.add_command(label="Clear history", command=self.clear_history)
+
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Help", menu=help_menu)
+        help_menu.add_command(label="About the program", command=self.show_about)
+
+    def update_metadata(self, file_path):
+        metadata = {
+            "File name": os.path.basename(file_path),
+            "Size": f"{os.path.getsize(file_path):,} byte",
+            "Date modified": datetime.fromtimestamp(
+                os.path.getmtime(file_path)
+            ).strftime("%Y-%m-%d %H:%M:%S"),
+            "Algorithm": self.algorithm_var.get() if hasattr(self, 'algorithm_var') else "Unknown"
+        }
+        return metadata
 
     def select_encrypt_file(self):
         self.encrypt_file = filedialog.askopenfilename(
-            title="Выберите файл для шифрования"
+            title="Select a file to encrypt"
         )
         if self.encrypt_file:
-            filename = os.path.basename(self.encrypt_file)
-            self.encrypt_file_label.config(text=f"Выбран: {filename}")
-            self.encrypt_status.config(text="")
-            self.encrypt_progress_var.set(0)
+            self.encrypt_file_label.config(
+                text=os.path.basename(self.encrypt_file)
+            )
+            metadata = self.update_metadata(self.encrypt_file)
+            self.metadata_text.delete(1.0, tk.END)
+            self.metadata_text.insert(
+                1.0,
+                "\n".join(f"{k}: {v}" for k, v in metadata.items())
+            )
+            self.logger.log_operation(
+                operation_type="file_selection",
+                file_path=self.encrypt_file,
+                status="selected_for_encryption"
+            )
 
     def select_decrypt_file(self):
         self.decrypt_file = filedialog.askopenfilename(
-            title="Выберите зашифрованный файл",
-            filetypes=[("Зашифрованные файлы", "*.encrypted"), ("Все файлы", "*.*")]
+            title="Select file to decrypt",
+            filetypes=[("Encrypted files", "*.encrypted")]
         )
         if self.decrypt_file:
-            filename = os.path.basename(self.decrypt_file)
-            self.decrypt_file_label.config(text=f"Выбран: {filename}")
-            self.decrypt_status.config(text="")
-            self.decrypt_progress_var.set(0)
+            self.decrypt_file_label.config(
+                text=os.path.basename(self.decrypt_file)
+            )
+            metadata = self.update_metadata(self.decrypt_file)
+            self.decrypt_metadata_text.delete(1.0, tk.END)
+            self.decrypt_metadata_text.insert(
+                1.0,
+                "\n".join(f"{k}: {v}" for k, v in metadata.items())
+            )
+            self.logger.log_operation(
+                operation_type="file_selection",
+                file_path=self.decrypt_file,
+                status="selected_for_decryption"
+            )
 
     def start_encryption(self):
         if not self.encrypt_file:
-            messagebox.showerror("Ошибка", "Выберите файл для шифрования!")
+            self.show_error("Error", "Select a file to encrypt")
             return
 
         password = self.encrypt_password_entry.get()
         confirm_password = self.encrypt_confirm_password_entry.get()
 
+        if not password or not confirm_password:
+            self.show_error("Error", "Enter your password and confirmation")
+            return
+
         if password != confirm_password:
-            messagebox.showerror("Ошибка", "Пароли не совпадают!")
+            self.show_error("Error", "The passwords do not match")
             return
 
-        is_valid, message = InputValidator.validate_password(password)
-        if not is_valid:
-            messagebox.showerror("Ошибка", message)
+        valid, message = self.encryptor.validate_password(password)
+        if not valid:
+            self.show_error("Error", message)
             return
 
-        output_file = filedialog.asksaveasfilename(
-            defaultextension=".encrypted",
-            filetypes=[("Зашифрованные файлы", "*.encrypted")],
-            initialfile=os.path.basename(self.encrypt_file) + ".encrypted"
-        )
-        if not output_file:
+        algorithm = self.algorithm_var.get()
+        if algorithm == "RSA":
+            self.show_error("Error", "RSA encryption is temporarily unavailable")
             return
 
+        output_file = f"{self.encrypt_file}.encrypted"
         self.encrypt_btn.state(['disabled'])
-        self.encrypt_status.config(text="Шифрование...")
+        self.encrypt_progress_var.set(0)
+        self.encrypt_status.config(text="Encryption...")
 
-        thread = threading.Thread(
-            target=self.process_encryption,
-            args=(password, output_file)
-        )
-        thread.start()
+        try:
+            self.process_encryption(password, output_file, algorithm)
+        except Exception as e:
+            self.show_error("Error", f"Encryption error: {str(e)}")
+            self.encrypt_btn.state(['!disabled'])
+            self.encrypt_status.config(text="Encryption error")
+            self.encrypt_progress_var.set(0)
 
     def start_decryption(self):
         if not self.decrypt_file:
-            messagebox.showerror("Ошибка", "Выберите зашифрованный файл!")
+            self.show_error("Error", "Select file to decrypt")
             return
 
         password = self.decrypt_password_entry.get()
         if not password:
-            messagebox.showerror("Ошибка", "Введите пароль!")
+            self.show_error("Error", "Enter your password")
             return
 
-        # Предлагаем имя файла без расширения .encrypted
-        suggested_name = os.path.splitext(os.path.basename(self.decrypt_file))[0]
-        if suggested_name.endswith('.encrypted'):
-            suggested_name = suggested_name[:-10]
-
-        output_file = filedialog.asksaveasfilename(
-            initialfile=suggested_name
-        )
-        if not output_file:
-            return
+        output_file = self.decrypt_file.replace('.encrypted', '')
+        if os.path.exists(output_file):
+            output_file = self.get_unique_filename(output_file)
 
         self.decrypt_btn.state(['disabled'])
-        self.decrypt_status.config(text="Расшифровка...")
+        self.decrypt_progress_var.set(0)
+        self.decrypt_status.config(text="Decoding...")
 
-        thread = threading.Thread(
-            target=self.process_decryption,
-            args=(password, output_file)
-        )
-        thread.start()
-
-    def process_encryption(self, password, output_file):
         try:
-            self.encryptor.encrypt_file(self.encrypt_file, output_file, password)
-            self.window.after(0, self.encryption_complete, True)
+            self.process_decryption(password, output_file)
         except Exception as e:
-            self.window.after(0, self.encryption_complete, False, str(e))
+            self.show_error("Error", f"Decryption error: {str(e)}")
+            self.decrypt_btn.state(['!disabled'])
+            self.decrypt_status.config(text="Decryption error")
+            self.decrypt_progress_var.set(0)
+
+    def get_unique_filename(self, filename):
+        base, ext = os.path.splitext(filename)
+        counter = 1
+        while os.path.exists(filename):
+            filename = f"{base}_{counter}{ext}"
+            counter += 1
+        return filename
+
+    def process_encryption(self, password, output_file, algorithm):
+        file_size = os.path.getsize(self.encrypt_file)
+        self.encrypt_progress_var.set(5)
+
+        def progress_callback(processed_bytes):
+            progress = (processed_bytes / file_size) * 100
+            self.encrypt_progress_var.set(progress)
+            self.window.update()
+
+        self.encryptor.encrypt_file(
+            self.encrypt_file,
+            output_file,
+            password,
+            algorithm,
+            progress_callback=progress_callback
+        )
+
+        self.window.after(0, self.encryption_complete, True)
 
     def process_decryption(self, password, output_file):
-        try:
-            success = self.encryptor.decrypt_file(self.decrypt_file, output_file, password)
-            if success:
-                self.window.after(0, self.decryption_complete, True)
-            else:
-                self.window.after(0, self.decryption_complete, False, "Неверный пароль или поврежденный файл")
-        except Exception as e:
-            self.window.after(0, self.decryption_complete, False, str(e))
+        file_size = os.path.getsize(self.decrypt_file)
+        self.decrypt_progress_var.set(5)
+
+        def progress_callback(processed_bytes):
+            progress = (processed_bytes / file_size) * 100
+            self.decrypt_progress_var.set(progress)
+            self.window.update()
+
+        success = self.encryptor.decrypt_file(
+            self.decrypt_file,
+            output_file,
+            password,
+            progress_callback=progress_callback
+        )
+
+        if success:
+            self.window.after(0, self.decryption_complete, True)
+        else:
+            self.window.after(0, self.decryption_complete, False, "Incorrect password or corrupted file")
 
     def encryption_complete(self, success, error_message=None):
         self.encrypt_btn.state(['!disabled'])
 
         if success:
             self.encrypt_progress_var.set(100)
-            self.encrypt_status.config(text="Файл успешно зашифрован")
-            messagebox.showinfo("Успех", "Файл успешно зашифрован")
+            self.encrypt_status.config(text="The file was successfully encrypted")
+            self.show_success("Success", "The file was successfully encrypted")
+            self.encrypt_password_entry.delete(0, tk.END)
+            self.encrypt_confirm_password_entry.delete(0, tk.END)
         else:
             self.encrypt_progress_var.set(0)
-            self.encrypt_status.config(text="Ошибка шифрования")
-            messagebox.showerror("Ошибка", error_message or "Произошла ошибка при шифровании")
+            self.encrypt_status.config(text="Encryption error")
+            self.show_error("Error", error_message or "An error occurred while encrypting")
 
     def decryption_complete(self, success, error_message=None):
         self.decrypt_btn.state(['!disabled'])
 
         if success:
             self.decrypt_progress_var.set(100)
-            self.decrypt_status.config(text="Файл успешно расшифрован")
-            messagebox.showinfo("Успех", "Файл успешно расшифрован")
+            self.decrypt_status.config(text="The file was successfully decrypted")
+            self.show_success("Success", "The file was successfully decrypted")
+            self.decrypt_password_entry.delete(0, tk.END)
         else:
             self.decrypt_progress_var.set(0)
-            self.decrypt_status.config(text="Ошибка расшифровки")
-            messagebox.showerror("Ошибка", error_message or "Произошла ошибка при расшифровке")
+            self.decrypt_status.config(text="Decryption error")
+            self.show_error("Error", error_message or "An error occurred while decrypting")
+
+    def show_error(self, title, message):
+        messagebox.showerror(title, message)
+        self.logger.log_error(message)
+
+    def show_success(self, title, message):
+        messagebox.showinfo(title, message)
+        self.logger.log_operation(
+            operation_type="notification",
+            file_path=None,
+            status="success"
+        )
+
+    def show_about(self):
+        about_text = """
+                File encryption program
+                Version: 1.0
+
+                Developer: scrollDynasty
+                © 2025 All rights reserved
+
+                Supported algorithms:
+                - Fernet (default)
+                - AES
+                - RSA (in development)
+
+                The program is designed for 
+                secure encryption and decryption o
+                f files using modern algorithms.
+                """
+        messagebox.showinfo("About the program", about_text.strip())
+
+    def view_logs(self):
+        try:
+            logs = self.logger.get_logs()
+            if logs:
+                log_window = tk.Toplevel(self.window)
+                log_window.title("Viewing logs")
+                log_window.geometry("600x400")
+
+                log_text = tk.Text(log_window, wrap=tk.WORD)
+                log_text.pack(expand=True, fill='both', padx=10, pady=5)
+
+                scrollbar = ttk.Scrollbar(log_window, command=log_text.yview)
+                scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+                log_text.config(yscrollcommand=scrollbar.set)
+
+                for log in logs:
+                    log_text.insert(tk.END, f"{json.dumps(log, indent=2, ensure_ascii=False)}\n\n")
+
+                log_text.config(state='disabled')
+            else:
+                messagebox.showinfo("Logs", "No log entries")
+        except Exception as e:
+            self.show_error("Error", f"Failed to load logs: {str(e)}")
+
+    def clear_history(self):
+        if messagebox.askyesno("Confirmation", "Вы really want to clear your history?"):
+            try:
+                self.logger.clear_old_logs(days=0)
+                messagebox.showinfo("Success", "History cleared successfully")
+            except Exception as e:
+                self.show_error("Error", f"Failed to clear history: {str(e)}")
+
+    def quit_application(self):
+        if messagebox.askyesno("Confirmation", "Do you really want to go out?"):
+            self.logger.log_operation(
+                operation_type="application_shutdown",
+                file_path=None,
+                status="user_initiated"
+            )
+            self.window.quit()
 
     def run(self):
-        self.window.mainloop()
+        try:
+            self.window.mainloop()
+        except Exception as e:
+            self.logger.log_error(f"Critical error in main loop: {str(e)}")
+            raise

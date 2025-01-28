@@ -1,13 +1,12 @@
 class InputValidator:
     @staticmethod
     def validate_password(password):
-        """Проверяет надежность пароля"""
         if len(password) < 8:
-            return False, "Пароль должен содержать минимум 8 символов"
+            return False, "Password must be at least 8 characters long"
         if not any(c.isupper() for c in password):
-            return False, "Пароль должен содержать хотя бы одну заглавную букву"
+            return False, "The password must contain at least one capital letter."
         if not any(c.islower() for c in password):
-            return False, "Пароль должен содержать хотя бы одну строчную букву"
+            return False, "The password must contain at least one lowercase letter."
         if not any(c.isdigit() for c in password):
-            return False, "Пароль должен содержать хотя бы одну цифру"
-        return True, "Пароль соответствует требованиям"
+            return False, "The password must contain at least one number."
+        return True, "Password meets requirements"
