@@ -22,7 +22,7 @@
 
 <h2 id="about">📋 About</h2>
 
- <img src="/img/img.png" alt="Project Banner" style="max-width: 100%; height: auto;">
+ <img src="/img/img.png" alt="Project Banner" style="max-width: 243px; height: 465px;">
 
 <p>File Encryption Tool is a modern application for file encryption, developed with security and ease of use in mind. The program provides an intuitive graphical interface for encrypting and decrypting files using robust cryptographic algorithms.</p>
 
