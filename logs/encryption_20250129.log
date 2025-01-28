@@ -4,3 +4,9 @@
 2025-01-29 01:54:15 [INFO] {"timestamp": "2025-01-29 01:54:15", "operation": "application_start", "file": null, "status": "starting", "user": "scroll"}
 2025-01-29 01:54:15 [INFO] {"timestamp": "2025-01-29 01:54:15", "operation": "gui_start", "file": null, "status": "initialized", "user": "scroll"}
 2025-01-29 01:54:23 [INFO] {"timestamp": "2025-01-29 01:54:23", "operation": "application_shutdown", "file": null, "status": "success", "user": "scroll"}
+2025-01-29 02:15:16 [INFO] === Starting a new logging session ===
+2025-01-29 02:15:16 [INFO] Log directory: logs
+2025-01-29 02:15:16 [INFO] Current user: scroll
+2025-01-29 02:15:16 [INFO] {"timestamp": "2025-01-29 02:15:16", "operation": "application_start", "file": null, "status": "starting", "user": "scroll"}
+2025-01-29 02:15:16 [INFO] {"timestamp": "2025-01-29 02:15:16", "operation": "gui_start", "file": null, "status": "initialized", "user": "scroll"}
+2025-01-29 02:15:36 [INFO] {"timestamp": "2025-01-29 02:15:36", "operation": "application_shutdown", "file": null, "status": "success", "user": "scroll"}
