@@ -7,7 +7,7 @@ import os
 import base64
 from datetime import datetime
 
-
+PBKDF2_ITERATIONS = 480000
 class EncryptionAlgorithm:
     def __init__(self, key_size=256):
         self.key_size = key_size
@@ -26,14 +26,12 @@ class EncryptionAlgorithm:
                 algorithm=hashes.SHA256(),
                 length=32,
                 salt=self.salt,
-                iterations=100000,
+                iterations=PBKDF2_ITERATIONS,
             )
             key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
             return key
         except Exception as e:
             raise Exception(f"Key generation error: {str(e)}")
-
-
 class AESAlgorithm(EncryptionAlgorithm):
     def __init__(self, key_size=256):
         super().__init__(key_size)

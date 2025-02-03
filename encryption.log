@@ -1,0 +1,3 @@
+2025-02-03 16:24:42,506 - {"timestamp": "2025-02-03 16:24:42", "operation": "encryption", "file": "D:/projects/testsha/test.txt", "status": "success"}
+2025-02-03 16:24:58,362 - {"timestamp": "2025-02-03 16:24:58", "operation": "decryption", "file": "D:/projects/testsha/test.txt.encrypted", "status": "failed"}
+2025-02-03 16:25:14,280 - {"timestamp": "2025-02-03 16:25:14", "operation": "decryption", "file": "D:/projects/testsha/test.txt.encrypted", "status": "success"}
