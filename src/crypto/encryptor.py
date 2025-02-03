@@ -93,6 +93,7 @@ class FileEncryptor:
         try:
             total_processed = 0
             file_size = os.path.getsize(input_file)
+            decrypted_data = bytearray()  # Будем сначала сохранять данные в память
 
             with open(input_file, 'rb') as file:
                 algorithm = file.read(16).decode().rstrip('\0')
@@ -104,25 +105,33 @@ class FileEncryptor:
 
                 if algorithm == "Fernet":
                     f = Fernet(key)
-                    with open(output_file, 'wb') as out_file:
+                    try:
                         while chunk := file.read(chunk_size):
                             decrypted_chunk = f.decrypt(chunk)
-                            out_file.write(decrypted_chunk)
+                            decrypted_data.extend(decrypted_chunk)
                             total_processed += len(chunk)
                             if progress_callback:
                                 progress_callback(total_processed)
+
+                        # Если дошли до этой точки без ошибок, сохраняем файл
+                        with open(output_file, 'wb') as out_file:
+                            out_file.write(decrypted_data)
+
+                    except Exception as e:
+                        self.log_operation("decryption", input_file, "failed", "Invalid password or corrupted file")
+                        raise ValueError("Invalid password or corrupted file")
 
                 elif algorithm == "AES":
                     cipher = Cipher(algorithms.AES(key), modes.CBC(self.iv))
                     decryptor = cipher.decryptor()
                     unpadder = padding.PKCS7(128).unpadder()
 
-                    with open(output_file, 'wb') as out_file:
+                    try:
                         while chunk := file.read(chunk_size):
                             decrypted_chunk = decryptor.update(chunk)
                             try:
                                 unpadded_chunk = unpadder.update(decrypted_chunk)
-                                out_file.write(unpadded_chunk)
+                                decrypted_data.extend(unpadded_chunk)
                             except ValueError:
                                 pass
                             total_processed += len(chunk)
@@ -131,12 +140,19 @@ class FileEncryptor:
 
                         final_chunk = decryptor.finalize()
                         final_unpadded_chunk = unpadder.finalize()
-                        out_file.write(final_unpadded_chunk)
-                        if progress_callback:
-                            progress_callback(file_size)
+                        decrypted_data.extend(final_unpadded_chunk)
+
+                        # Если дошли до этой точки без ошибок, сохраняем файл
+                        with open(output_file, 'wb') as out_file:
+                            out_file.write(decrypted_data)
+
+                    except Exception as e:
+                        self.log_operation("decryption", input_file, "failed", "Invalid password or corrupted file")
+                        raise ValueError("Invalid password or corrupted file")
 
             self.log_operation("decryption", input_file, "success")
             return True
+
         except Exception as e:
             self.log_operation("decryption", input_file, "failed", str(e))
             raise
