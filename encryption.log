@@ -1,3 +1,14 @@
 2025-02-03 16:24:42,506 - {"timestamp": "2025-02-03 16:24:42", "operation": "encryption", "file": "D:/projects/testsha/test.txt", "status": "success"}
 2025-02-03 16:24:58,362 - {"timestamp": "2025-02-03 16:24:58", "operation": "decryption", "file": "D:/projects/testsha/test.txt.encrypted", "status": "failed"}
 2025-02-03 16:25:14,280 - {"timestamp": "2025-02-03 16:25:14", "operation": "decryption", "file": "D:/projects/testsha/test.txt.encrypted", "status": "success"}
+2025-02-03 16:30:46,236 - {"timestamp": "2025-02-03 16:30:46", "operation": "encryption", "file": "D:/projects/testsha/test.txt", "status": "success"}
+2025-02-03 16:31:05,400 - {"timestamp": "2025-02-03 16:31:05", "operation": "decryption", "file": "D:/projects/testsha/test.txt.encrypted", "status": "failed", "error": "Invalid password or corrupted file"}
+2025-02-03 16:31:05,401 - {"timestamp": "2025-02-03 16:31:05", "operation": "decryption", "file": "D:/projects/testsha/test.txt.encrypted", "status": "failed", "error": "Invalid password or corrupted file"}
+2025-02-03 16:31:22,958 - {"timestamp": "2025-02-03 16:31:22", "operation": "decryption", "file": "D:/projects/testsha/test.txt.encrypted", "status": "success"}
+2025-02-03 16:32:42,525 - {"timestamp": "2025-02-03 16:32:42", "operation": "encryption", "file": "D:/projects/testsha/test.txt", "status": "success"}
+2025-02-03 16:33:00,068 - {"timestamp": "2025-02-03 16:33:00", "operation": "encryption", "file": "D:/projects/testsha/test.txt", "status": "success"}
+2025-02-03 16:33:21,098 - {"timestamp": "2025-02-03 16:33:21", "operation": "decryption", "file": "D:/projects/testsha/test.txt.encrypted", "status": "success"}
+2025-02-03 16:33:50,110 - {"timestamp": "2025-02-03 16:33:50", "operation": "decryption", "file": "D:/projects/testsha/test.txt.encrypted", "status": "failed", "error": "Invalid password or corrupted file"}
+2025-02-03 16:33:50,110 - {"timestamp": "2025-02-03 16:33:50", "operation": "decryption", "file": "D:/projects/testsha/test.txt.encrypted", "status": "failed", "error": "Invalid password or corrupted file"}
+2025-02-03 16:33:56,713 - {"timestamp": "2025-02-03 16:33:56", "operation": "decryption", "file": "D:/projects/testsha/test.txt.encrypted", "status": "failed", "error": "Invalid password or corrupted file"}
+2025-02-03 16:33:56,713 - {"timestamp": "2025-02-03 16:33:56", "operation": "decryption", "file": "D:/projects/testsha/test.txt.encrypted", "status": "failed", "error": "Invalid password or corrupted file"}
